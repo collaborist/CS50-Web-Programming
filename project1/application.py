@@ -6,6 +6,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 app = Flask(__name__)
+app.secret_key = os.urandom(24)
 
 # Check for environment variable
 if not os.getenv("DATABASE_URL"):
@@ -39,6 +40,31 @@ def login():
     if (name == "") or (password == ""):
         return render_template("error.html", message="Name or Password is empty!")
     #print(name,password)
-    db.execute("INSERT INTO users (name, password) VALUES (:name, :password)", {"name": name, "password": password})
-    db.commit()
+    try:
+        db.execute("INSERT INTO users (name, password) VALUES (:name, :password)", {"name": name, "password": password})
+        db.commit()
+    except:
+        return render_template("error.html", message="Данное имя пользователя уже занято =(")
+    return render_template("success.html")
+
+
+@app.route("/signin", methods=["POST"])
+def signin():
+    """Sign In."""
+
+    # Get form information.
+    name = request.form.get("name")
+    password = request.form.get("password")
+    if (name == "") or (password == ""):
+        return render_template("error.html", message="Name or Password is empty!")
+    #print(name,password)
+    try:
+        pas = db.execute("select password from users where users.name = name")
+        if password == pas:
+            if name in session:
+                return session["name"]
+            return "Not loggerd in!"
+
+    except:
+        return render_template("error.html", message="Данное имя пользователя уже занято =(")
     return render_template("success.html")
